@@ -126,7 +126,7 @@ class UI():
 
                     # , [sg.T('{}, {}'.format(*self.currentPos), font = (deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
-        block_mid = [[sg.T('Array size: \n{}'.format(self.scanLen if self.scanLen else 'N/A'), size = (19,2), background_color = 'red', font = (deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (deja, 10), size = (19,2), justification = 'centre', background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (deja, 10), size = (19,2), justification = 'centre', background_color='green', key='READY', visible = False)]]
+        block_mid = [[sg.T('Array size: \n{}'.format(self.scanLen if self.scanLen else 'N/A'), size = (19,2), background_color = 'red', font = (deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (deja, 10), size = (19,2), key='READY', visible = False)]]
 
 
         layout = [
