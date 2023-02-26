@@ -59,22 +59,22 @@ class TK_GUI:
         print("Option:", self.option_var.get())
         print("Text input:", self.text_var.get())
 
-class MicroscopeConfig:
-
-    attributeList = [
-        'microscope_mode',
-        'light_level',
-        'light_on',
-        'current_position',
-        'linescanConfig',
-        'mapConfig'
-        ]
-
-    def __init__(self, config):
-        # print(config.__dict__)
-        self.__dict__ = config.instrumentConfig
-        print(config.instrumentConfig)
-        print(self.__dict__)
+# class MicroscopeConfig:
+#
+#     attributeList = [
+#         'microscope_mode',
+#         'light_level',
+#         'light_on',
+#         'current_position',
+#         'linescanConfig',
+#         'mapConfig'
+#         ]
+#
+#     def __init__(self, config):
+#         # print(config.__dict__)
+#         self.__dict__ = config.instrumentConfig
+#         print(config.instrumentConfig)
+#         print(self.__dict__)
 
 
 
@@ -89,6 +89,9 @@ class Linescan:
         'start_pos',
         'finish_pos'
         ]
+
+    def __init__(self, configDict):
+        self.__dict__ = {key:value for (key, value) in configDict.items() if key in Linescan.attributeList}
     pass
 
 class Map:
@@ -109,6 +112,7 @@ class MetaFile:
 
             self.__generate_config()
             self.__write_config_file()
+
     def query_mode(self):
         while True:
             mode = input('Please enter current microscope configuration: "image" or "raman"\n')
@@ -124,19 +128,21 @@ class MetaFile:
         # if self.hasConfig: # check config exists
         #     print('Config file found, returning...')
         #     return
+        self.__dict__ = {'scriptDir': self.scriptDir, 'hasConfig': True}
 
         microscope_mode = self.query_mode()
 
 
-        self.instrumentConfig = {
+        self.instrument = {
             'microscope_mode': microscope_mode,
             'light_level': 255,
             'light_on': False,
             'current_position': [0, 0],
-            'scan_type': 'linescan'
+            # 'scan_type': 'linescan'
         }
 
-        self.linescanConfig = {
+        self.scan = {
+            'scan_type': 'linescan',
             'scan_res': 1,
             'scan_len': None,
             'acquisition_time': 1,
@@ -170,21 +176,36 @@ class MetaFile:
 class SimGUI:
 
     codeKeys = {'IMAGEMODE':'image mode', 'RAMANMODE':'raman mode'}
+    deja = 'DejaVu Sans Mono'
+
 
 
     def __init__(self):
         self.config = MetaFile()
-        self.microscope = MicroscopeConfig(self.config)
         # print(self.config.__dict__)
+        # self.microscope = MicroscopeConfig(self.config)
+        print(self.config.instrument)
+        pause()
 
-        self.scan_type = self.config.instrumentConfig['scan_type']
+        # print(self.microscope.__dict__)
+
+        self.scan_type = self.instrument.scan_type
+        self.microscope_mode = self.microscope.microscope_mode
+        self.current_position = self.microscope.current_position
+        self.light_level = self.microscope.light_level
+        self.light_on = self.microscope.light_on
+        # self.current_
+
+        self.linescan = Linescan(self.config.linescanConfig)
+        print(self.linescan.__dict__)
+        # pause()
 
         # self.scan_type = self.microscope.scan_type
         # print(self.microscope.__dict__)
 
         # print(self.scan_type)
 
-        # self.window = self.__construct_UI()
+        self.window = self.__construct_UI()
 
     def __construct_UI(self):
 
@@ -218,8 +239,8 @@ class SimGUI:
 
 
         block_control = [[sg.Text('Controls', font='Any 12')],
-                    [sg.Radio('Linescan', 'scanType', enable_events=True, key = 'LINESCAN', default = (False if self.microscope.scan_type == 'map' else True)), sg.Radio('Map', group_id='scanType', enable_events=True, key='MAP', default = (True if self.scanType == 'map' else False)), sg.Radio('Image mode', group_id='microMode', enable_events=True, key='IMAGEMODE', default = (True if self.microMode == 'IMAGEMODE' else False)), sg.Radio('Raman mode', group_id='microMode', enable_events=True, key='RAMANMODE', default = (True if self.microMode == 'RAMANMODE' else False))],
-                    [sg.T('Alread in {} - are you sure you want to ovewrite?'.format(self.microMode), visible = False, key = 'MODE_CHECK')],
+                    [sg.Radio('Linescan', 'scanType', enable_events=True, key = 'LINESCAN', default = (False if self.scan_type == 'map' else True)), sg.Radio('Map', group_id='scanType', enable_events=True, key='MAP', default = (True if self.scan_type == 'map' else False)), sg.Radio('Image mode', group_id='microMode', enable_events=True, key='IMAGEMODE', default = (True if self.microscope_mode == 'image' else False)), sg.Radio('Raman mode', group_id='microMode', enable_events=True, key='RAMANMODE', default = (True if self.microscope_mode == 'raman' else False))],
+                    [sg.T('Alread in {} mode - are you sure you want to ovewrite?'.format(self.microscope_mode), visible = False, key = 'MODE_CHECK')],
                     [sg.Button('Cancel', visible = False, key = 'CANCEL'), sg.Button('OVERWRITE', visible = False, key = 'OVERWRITE')]]
 
         block_left = [[sg.T('Illumination'), sg.Button('OFF', size = (3,1), button_color   ='white on grey', key='LIGHT', border_width=0), sg.Slider(range = (0, 255), disable_number_display = True, size=(15,15), key='LIGHTSL', default_value=255, resolution=1,enable_events=True,orientation='h')],
@@ -236,11 +257,11 @@ class SimGUI:
                     [sg.In(size = (4,1), key='STEPIN', enable_events=True), sg.T(stepSize, key='STEP')],           [sg.Slider(range = (1, 1000), size=(15,15), key='STEPSL', default_value=10, resolution=1,enable_events=True,orientation='h')]]
 
         block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME')],
-                    [sg.T('Current Pos\n{}, {}  xy'.format(*self.currentPos), font=(deja,10), size = (12,2), text_color = 'white', background_color='green', justification='centre')]]
+                    [sg.T('Current Pos\n{}, {}  xy'.format(*self.current_position), font=(SimGUI.deja,10), size = (12,2), text_color = 'white', background_color='green', justification='centre')]]
 
-                    # , [sg.T('{}, {}'.format(*self.currentPos), font = (deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
+                    # , [sg.T('{}, {}'.format(*self.current_position), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
-        block_mid = [[sg.T('Array size: \n{}'.format(self.scanLen if self.scanLen else 'N/A'), size = (19,2), background_color = 'red', font = (deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (deja, 10), size = (19,2), key='READY', visible = False)]]
+        block_mid = [[sg.T('Array size: \n{}'.format(self.scanLen if self.scanLen else 'N/A'), size = (19,2), background_color = 'red', font = (SimGUI.deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (SimGUI.deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (SimGUI.deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (SimGUI.deja, 10), size = (19,2), key='READY', visible = False)]]
 
 
         layout = [
@@ -278,6 +299,7 @@ class SimGUI:
 if __name__ == "__main__":
     win = SimGUI()
     # mf = MetaFile()
+    # mf._save_config(makeNew = True)
     # print(mf.__dict__)
     # win.config._save_config(makeNew = True)
 
