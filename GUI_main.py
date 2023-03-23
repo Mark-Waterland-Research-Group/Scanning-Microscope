@@ -173,31 +173,79 @@ class MetaFile:
             self.__generate_config()
         self.__write_config_file()
 
+class MicroscopeFunctions:
+
+    '''Holds and handles microscope functions. Is passed a
+    keyword which is used to specify the function to run.'''
+
+
+
+    def init_functions(self):
+
+
+        self.functionCall = {
+            'LINESCAN': self.set_linescan_mode,
+            'MAP': self.set_map_mode,
+            'LIGHT': self.toggle_light
+
+        }
+
+    def __init__(self):
+        self.functionCall = self.init_functions()
+        
+
+    '''Microscope Commands'''
+    def set_linescan_mode(self):
+        pass
+
+    
+
+    def print_response(self, a = 'a', b = 'b', c = 'c'):
+        # dummy function for printing the response of inputs
+        print(a)
+        print(b)
+        print(c)
+    
+    def ramanMode(self):
+        print('Switching to Raman mode')
+        self.config.instrument['microscope_mode'] = 'raman'
+        self.lightOff()
+        print('Switching complete - Ready for Raman')
+
+        # self.__pull_config()
+
 class SimGUI:
 
     codeKeys = {'IMAGEMODE':'image mode', 'RAMANMODE':'raman mode'}
     deja = 'DejaVu Sans Mono'
 
 
-
-    def __init__(self):
-        self.config = MetaFile()
+    def __init__(self, configObject):
+        self.config = configObject
         # print(self.config.__dict__)
         # self.microscope = MicroscopeConfig(self.config)
         print(self.config.instrument)
-        pause()
 
-        # print(self.microscope.__dict__)
 
-        self.scan_type = self.instrument.scan_type
-        self.microscope_mode = self.microscope.microscope_mode
-        self.current_position = self.microscope.current_position
-        self.light_level = self.microscope.light_level
-        self.light_on = self.microscope.light_on
+        instrumentConfig = self.config.instrument
+        scanConfig = self.config.scan
+
+        # self.scan_type = scanConfig['scan_type']
+        for key, item in instrumentConfig.items():
+            self.__dict__[key] = item
+        for key, item in scanConfig.items():
+            self.__dict__[key] = item
+
+
+
+        # self.microscope_mode = self.microscope.microscope_mode
+        # self.current_position = self.microscope.current_position
+        # self.light_level = self.microscope.light_level
+        # self.light_on = self.microscope.light_on
         # self.current_
 
-        self.linescan = Linescan(self.config.linescanConfig)
-        print(self.linescan.__dict__)
+        self.linescan = Linescan(self.config.scan)
+        # print(self.linescan.__dict__)
         # pause()
 
         # self.scan_type = self.microscope.scan_type
@@ -261,7 +309,7 @@ class SimGUI:
 
                     # , [sg.T('{}, {}'.format(*self.current_position), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
-        block_mid = [[sg.T('Array size: \n{}'.format(self.scanLen if self.scanLen else 'N/A'), size = (19,2), background_color = 'red', font = (SimGUI.deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (SimGUI.deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (SimGUI.deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (SimGUI.deja, 10), size = (19,2), key='READY', visible = False)]]
+        block_mid = [[sg.T('Array size: \n{}'.format(self.linescan.scan_len if self.linescan.scan_len else 'N/A'), size = (19,2), background_color = 'red', font = (SimGUI.deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (SimGUI.deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (SimGUI.deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (SimGUI.deja, 10), size = (19,2), key='READY', visible = False)]]
 
 
         layout = [
@@ -280,14 +328,150 @@ class SimGUI:
 
         return self.window
 
+    def parse_input(self, input):
+        try: # searches for spaces in command
+            command = input[:input.index(' ')]
+        except:
+            return input, None # if no spaces, returns input as command
+        try: # grabs string after the space
+            arg = input[input.index(' ')+1:]
+            if len(arg) == 0:
+                return command, None
+        except:
+            return command, None # if nothing after space, returns string before the space
+        try: # splits arguments by comma
+            arg = arg.split(',')
+            return command, arg
+        except:
+            return command, arg
 
-    def print_response(self, a = 'a', b = 'b', c = 'c'):
-        # dummy function for printing the response of inputs
-        print(a)
-        print(b)
-        print(c)
 
-        # self.__pull_config()
+
+    def main_loop(self):
+        microscope = MicroscopeFunctions()
+                    # pass
+                # pass
+        while True:             # Event Loop
+            self.event, self.values = self.window.read()
+
+
+            
+            if self.event == 'LINESCAN':
+                self.scanType = 'linescan'
+            if self.event == 'MAP':
+                self.scanType = 'map'
+
+            if self.event == 'LIGHT': # adjusts lighting
+                self.light = not self.light
+                if self.light:
+                    self.lightOn()
+                else:
+                    self.lightOff()
+
+            if self.event == 'LIGHTSL':
+                self.lightLevel = self.values['LIGHTSL']
+                if self.light:
+                    self.lightOn(self.lightLevel)
+                # if self.light:
+
+            if self.event == 'STARTPOSBUT':
+                print('Setting start position as {}'.format(self.currentPos))
+                self.startPos = self.currentPos
+                self.window['STARTPOSVAL'].update(self.startPos)
+
+            if self.event == 'STARTPOSIN':
+                try:
+                    pos = np.array(self.values['STARTPOSIN'].split(',')).astype(float)
+                    self.startPos = (pos[0], pos[1])
+                    self.window['STARTPOSVAL'].update(self.startPos)
+                except Exception as e:
+                    print(e)
+                    self.startPos = None
+                    self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
+                    self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+            elif self.event == 'FINISHPOSIN':
+                try:
+                    pos = np.array(self.values['FINISHPOSIN'].split(',')).astype(float)
+                    self.finishPos = (pos[0], pos[1])
+                    self.window['FINISHPOSVAL'].update(self.finishPos)
+                except Exception as e:
+                    print(e)
+                    self.finishPos = None
+                    self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
+                    self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+
+            if self.event == 'SCANRESIN':
+                # self.scanRes = self.values['SCANRESIN']
+                try:
+                    self.scanRes = float(self.values['SCANRESIN'])
+                    self.window['SCANRESVAL'].update('{} mu m'.format(self.scanRes))
+                except:
+                    pass
+
+            if self.event == 'ACQIN':
+                try:
+                    self.acquisitionTime = float(self.values['ACQIN'])
+                    self.window['ACQVAL'].update('{} second(s)'.format(self.acquisitionTime))
+                except:
+                    self.acquisitionTime = None
+                    pass
+
+            if self.event == sg.WIN_CLOSED or self.event == 'Exit':
+                break
+            print(self.event)
+            print(self.values)
+            if self.event == 'CANCEL':
+                self.window['MODE_CHECK'].update(visible = False)
+                self.window['CANCEL'].update(visible = False)
+                self.window['OVERWRITE'].update(visible = False)
+                continue
+
+            if self.event == 'OVERWRITE': # Forces microscope mode change
+                self.overwrite_mode()
+
+            if self.event == 'IMAGEMODE' or self.event == 'RAMANMODE': # if microscope mode is selected
+                self.event_radio()
+                continue
+
+            if self.event == 'STEPIN': # adjusts the motion step size (value)
+                try:
+                    stepSize = float(self.values['STEPIN'])
+                    if 0.05 <= stepSize <= 5000:
+                        self.window['STEP'].update(stepSize)
+                except:
+                    pass
+                continue
+
+            if self.event == 'STEPSL': # adjusts the motion step size (slider)
+                stepSize = float(self.values['STEPSL'])
+                self.window['STEP'].update(int(stepSize))
+                self.window['STEPIN'].update(int(stepSize))
+                continue
+
+            if self.event == 'SUBMIT':
+                com = self.values['COMIN']
+                if com == '':
+                    continue
+                self.window['COM'].update('Enter commands')
+                command, arg = self.parse_input(com)
+                print(command)
+                print(arg)
+
+                try:
+                    if not arg:
+                        self.commandDict[command]()
+                    else:
+                        self.commandDict[command](*arg)
+                    self.window['COMIN'].update('')
+                except Exception as e:
+                    print(e)
+                    self.window['COM'].update('Command "{}" not recognised.\n{}'.format(com, e))
+
+
+
+            self.refresh_window()
+
+
 
     # def __pull_config(self):
         # takes the config items and puts relevant information into attributes
@@ -297,13 +481,20 @@ class SimGUI:
 
 
 if __name__ == "__main__":
-    win = SimGUI()
+    Config = MetaFile()
+    Win = SimGUI(Config)
     # mf = MetaFile()
     # mf._save_config(makeNew = True)
     # print(mf.__dict__)
     # win.config._save_config(makeNew = True)
 
-    print(win.config.__dict__)
+    print(Win.config.__dict__)
+    print(Config.__dict__)
+    pause()
+    Win.main_loop()
+    '''
+    # NEED TO GO THROUGH AND CHANGE ALL THE VARIABLES IN MAINLOOP
+    '''
     # print(win.__dict__)
 
     # root = tk.Tk()
