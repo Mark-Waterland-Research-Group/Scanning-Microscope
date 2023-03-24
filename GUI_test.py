@@ -222,6 +222,7 @@ class UI():
         #
         self.scanLen = len(self.posDict)
         # return xScan, yScan
+    
     def generate_linescan(self):
         lineVector = (float(self.finishPos[0])-float(self.startPos[0]), float(self.finishPos[1])-float(self.startPos[1]))
         self.scanLen = math.sqrt((lineVector[0]**2)+(lineVector[1]**2))
@@ -242,11 +243,6 @@ class UI():
         self.window['MODE_CHECK'].update(visible = False)
         self.window['CANCEL'].update(visible = False)
         self.window['OVERWRITE'].update(visible = False)
-
-        # if self.microMode == 'RAMANMODE':
-        #     self.window['RAMANMODE'].update(disabled = False)
-        # elif self.microMode == 'IMAGEMODE':
-        #     self.window['IMAGEMODE'].update(disabled = False)
 
         if self.event in ['STARTPOSIN','STARTPOSBUT','FINISHPOSIN','FINISHPOSBUT','SCANRESIN','MAP','LINESCAN','ACQIN']:
             if self.startPos and self.finishPos and self.scanRes:
