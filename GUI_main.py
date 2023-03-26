@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import numpy as np
 import os
 import json
+import math
 
 import tkinter as tk
 from tkinter import ttk
@@ -145,12 +146,13 @@ class MetaFile:
         self.scan = {
             'scan_type': 'linescan',
             'scan_res': 1,
-            'scan_len': None,
+            'scan_len': 0,
             'acquisition_time': 1,
             'x_scan': [],
             'y_scan': [],
             'start_pos': None,
-            'finish_pos': None
+            'finish_pos': None,
+            'linescanList': []
         }
 
         self.hasConfig = True
@@ -174,101 +176,39 @@ class MetaFile:
             self.__generate_config()
         self.__write_config_file()
 
-# class MicroscopeFunctions:
-
-#     '''Holds and handles microscope functions. Is passed a
-#     keyword which is used to specify the function to run.'''
-
-#     def __init_functions(self):
-#         '''Initialises the function dictionary... There's
-#         probably a better way to do this...'''
-
-#         self.__functionDict = {
-#             'LINESCAN': self.set_linescan_mode,
-#             'MAP': self.set_map_mode,
-#             'LIGHT': self.toggle_light,
-
-#         }
-
-#     def __init__(self):
-#         self.__init_functions()
-        
-#     def _function_call(self, event, values):
-#         pass
-
-
-#     '''Microscope Commands'''
-#     def set_linescan_mode(self):
-#         Config.scan['scan_type'] = 'linescan'
-
-#     def set_map_mode(self):
-#         Config.scan['scan_type'] = 'map'
-    
-#     def toggle_light(self):
-#         Config.instrument['light_level'] = not Config.instrument['light_level']
-#         # light = Config.instrument['light_level']
-#         if Config.instrument['light_level']:
-#             self.lightOn()
-#         else:
-#             self.lightOff()
-
-#     def lightOn(self, **args val = None):
-#         if not val:
-#             val = Config.instrument['light_level']
-#         Win.window['LIGHT'].update(text='ON', button_color='white on green')
-#         print('Turning on light at {} power'.format(val))
-
-#     def lightOff(self):
-#         Win.window['LIGHT'].update(text='OFF', button_color='white on grey')
-#         print('Light:0')
-
-    
-
-#     def print_response(self, a = 'a', b = 'b', c = 'c'):
-#         # dummy function for printing the response of inputs
-#         print(a)
-#         print(b)
-#         print(c)
-    
-#     def ramanMode(self):
-#         print('Switching to Raman mode')
-#         self.config.instrument['microscope_mode'] = 'raman'
-#         self.lightOff()
-#         print('Switching complete - Ready for Raman')
-
-#         # self.__pull_config()
-
 class SimGUI:
 
     codeKeys = {'IMAGEMODE':'image mode', 'RAMANMODE':'raman mode'}
     deja = 'DejaVu Sans Mono'
 
-
     def __init__(self, configObject):
-        self.microscopeFunctions = {
+        self.microscopeFunctionDict = {
             'SUBMIT': self.parse_input,
             'LINESCAN': self.set_linescan_mode,
             'MAP': self.set_map_mode,
             'IMAGEMODE': self.imageMode,
-            RAMANMODE: self.ramanMode,
-            LIGHT: self.toggle_light,
-            LIGHTSL: self.lightOn,
-            STARTPOSBUT: self.set_start_pos,
-            STARTPOSIN: self.input_start_pos,
-            FINISHPOSBUT: self.set_finish_pos,
-            FINISHPOSIN: self.input_finish_pos,
-            SCANRESIN: self.set_scan_res,
-            ACQIN: self.set_acquisition_time,
-            SYMBOL_LEFT_ARROWHEAD: self.move_stage_left,
-            SYMBOL_RIGHT_ARROWHEAD: self.move_stage_right,
-            SYMBOL_UP_ARROWHEAD: self.move_stage_up,
-            SYMBOL_DOWN_ARROWHEAD: self.move_stage_down,
-            STEPIN: self.set_step_size,
-            STEPSL: self.set_step_size_slider,
-            SETHOME: self.set_home_position,
-            GOHOME: self.move_to_home_position,
-            CANCEL: self.cancel_overwrite,
-            OVERWRITE: self.overwrite_mode
+            'RAMANMODE': self.ramanMode,
+            'LIGHT': self.toggle_light,
+            'LIGHTSL': self.lightOn,
+            'STARTPOSBUT': self.set_start_pos,
+            'STARTPOSIN': self.input_start_pos,
+            'FINISHPOSBUT': self.set_finish_pos,
+            'FINISHPOSIN': self.input_finish_pos,
+            'SCANRESIN': self.set_scan_res,
+            'ACQIN': self.set_acquisition_time,
+            'SYMBOL_LEFT_ARROWHEAD': self.move_stage_left,
+            'SYMBOL_RIGHT_ARROWHEAD': self.move_stage_right,
+            'SYMBOL_UP_ARROWHEAD': self.move_stage_up,
+            'SYMBOL_DOWN_ARROWHEAD': self.move_stage_down,
+            'STEPIN': self.set_step_size,
+            'STEPSL': self.set_step_size_slider,
+            'SETHOME': self.set_home_position,
+            'GOHOME': self.move_to_home_position,
+            'CANCEL': self.cancel_overwrite,
+            'OVERWRITE': self.confirm_overwrite,
+            'READY': self.run_scan,
+            'SCANRES': self.do_nothing,
+            'ACQUISITIONTIME': self.do_nothing
             # SCANRES: 
             # ACQUISITIONTIME: 
             
@@ -276,6 +216,16 @@ class SimGUI:
         # BUG WITH LIGHT OFF/ON
         # BUG dont know what close_microscope triggers
         # 
+
+        # Status flags
+        self.startPos = False
+        self.finishPos = False
+        self.time = True
+        self.scanRes = True
+
+        # actual scan length
+        self.scanLen = Config.scan['scan_len']
+
 
         self.config = configObject
         # print(self.config.__dict__)
@@ -317,24 +267,28 @@ class SimGUI:
     Microscope functions
     --------------------------------
     '''
-    def move_to_position(self, position);
+    def do_nothing(self):
+        pass
+    def run_scan(self):
+        pass
+    def move_to_position(self, position):
         print('NOCOM: Moving to position {}'.format(position))
-    def set_home_position(self, values):
+    def set_home_position(self):
         Config.instrument['home_position'] = Config.instrument['current_position']
-    def move_to_home_position(self, values):
+    def move_to_home_position(self):
         self.move_to_position(Config.instrument['home_position'])
-    def move_stage_left(self, values):
+    def move_stage_left(self):
         print('NOCOM: Moving stage x+{}'.format(self.stepSize))
-    def move_stage_right(self, values):
+    def move_stage_right(self):
         print('NOCOM: Moving stage +-{}'.format(self.stepSize))
-    def move_stage_up(self, values):
+    def move_stage_up(self):
         print('NOCOM: Moving stage y-{}'.format(self.stepSize))
-    def move_stage_down(self, values):
+    def move_stage_down(self):
         print('NOCOM: Moving stage y+{}'.format(self.stepSize))
 
-    def set_step_size(self, values):
+    def set_step_size(self):
         '''Sets the motion step size from the step size input textbox'''
-        stepSize = values['STEPIN'].strip(' ')
+        stepSize = self.values['STEPIN'].strip(' ')
         try:
             stepSize = float(stepSize)
             if stepSize < 0.05:
@@ -349,151 +303,228 @@ class SimGUI:
         except:
             pass
 
-    def set_step_size_slider(self, values):
+    def set_step_size_slider(self):
         '''Sets the step size read from the slider'''
-        stepSize = int(values['STEPSL'])
+        stepSize = int(self.values['STEPSL'])
         self.window['STEP'].update(int(stepSize))
         self.window['STEPIN'].update(int(stepSize))
-
-    def set_acquisition_time(self, values):
-        '''Sets the acquisition time per scan point from the acquisition time input textbox'''
-        aqTime = values['ACQIN'].strip(' ')
-        try:
-            aqTime = float(aqTime)
-        except:
-            # Config.scan['acquisition_time'] = None
-            return
-        self.window['ACQVAL'].update('{} second(s)'.format(aqTime))
-        Config.scan['acquisition_time'] = aqTime
     
-    def cancel_overwrite(self, values):
+    def cancel_overwrite(self):
         '''Cancels the override warning box and returns to normal use'''
         self.window['MODE_CHECK'].update(visible = False)
         self.window['CANCEL'].update(visible = False)
         self.window['OVERWRITE'].update(visible = False)
+        print('Aborting mode change, staying in {}'.format(Config.instrument['microscope_mode']))
 
+    def confirm_overwrite(self):
+        '''Checks the microcope mode and changes it to the opposide type. This will be redundnat if I can put some sensors in to detect mode configuration.'''
+        print('Overwriting current mode...')
+        if Config.instrument['microscope_mode'] == 'IMAGEMODE':
+            Config.instrument['microscope_mode'] = 'RAMANMODE'
+            self.imageMode()
+        else:
+            Config.instrument['microscope_mode'] = 'IMAGEMODE'
+            self.ramanMode()
 
-    def set_scan_res(self, values):
+        self.window['MODE_CHECK'].update(visible = False)
+        self.window['CANCEL'].update(visible = False)
+        self.window['OVERWRITE'].update(visible = False)
+
+    def set_scan_res(self):
         '''Sets the scan resolution from the scan resolution input textbox'''
-        scanRes = values['SCANRESIN'].strip(' ')
+        scanRes = self.values['SCANRESIN'].strip(' ')
         try:
             scanRes = float(scanRes)
         except:
+            self.scanRes = False # flag for identifying changes later
             return
         
-        self.window['SCANRESVAL'].update('{} $\micro$ mu m'.format(scanRes))
+        if scanRes != 0:
+            self.scanRes = True # flag for identifying changes later
+            self.scan_change = True # flag for identifying changes later
+        self.window['SCANRESVAL'].update('{} um'.format(scanRes))
         Config.scan['scan_res'] = scanRes
 
-    def set_start_pos(self, values):
+    def set_acquisition_time(self):
+        '''Sets the acquisition time per scan point from the acquisition time input textbox'''
+        aqTime = self.values['ACQIN'].strip(' ')
+        try:
+            aqTime = float(aqTime)
+        except:
+            # Config.scan['acquisition_time'] = None
+            self.time = False # flag for identifying changes later
+            return
+        
+        if aqTime == 0:
+            self.time = False
+            return
+        
+        self.time = True # flag for identifying changes later
+        self.window['ACQVAL'].update('{} second(s)'.format(aqTime))
+        Config.scan['acquisition_time'] = aqTime
+
+
+    def set_start_pos(self):
         '''Sets the start position as the current position'''
         currentPos = Config.instrument['current_position']
-        self.window['STARTPOSIN'].update(text=currentPos)
+        if currentPos == Config.scan['start_pos']:
+            return # returns if position is unchanged
+        
+        self.window['STARTPOSIN'].update(','.join([str(x) for x in currentPos]))
+        self.window['STARTPOSVAL'].update(','.join([str(x) for x in currentPos]))
+
+        
         Config.scan['start_pos'] = currentPos
+        self.startPos = True # flag for identifying changes later
+        self.scan_change = True # flag for identifying changes later
     
-    def set_finish_pos(self, values):
+    def set_finish_pos(self):
         '''Sets the finish position as the current position'''
         currentPos = Config.instrument['current_position']
-        self.window['FINISHPOSIN'].update(text=currentPos)
+        if currentPos == Config.scan['finish_pos']:
+            return # returns if position is unchanged
+        
+        self.window['FINISHPOSIN'].update(','.join([str(x) for x in currentPos]))
+        self.window['FINISHPOSVAL'].update(','.join([str(x) for x in currentPos]))
+
         Config.scan['finish_pos'] = currentPos
+        self.finishPos = True # flag for identifying changes later
+        self.scan_change = True # flag for identifying changes later
+
     
-    def input_start_pos(self, values):
+    def input_start_pos(self):
         '''Parses the input text from the start position textbox'''
-        pos = values['STARTPOSIN'].split(',')
+        pos = self.values['STARTPOSIN'].split(',')
         try:
             x = float(pos[0].strip(' '))
             y = float(pos[1].strip(' '))
         except Exception as e:
             print(e)
-            startPos = None
+            self.startPos = False # flag for identifying changes later
             self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
             self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
             return
         startPos = (x, y)
-        self.window['STARTPOSVAL'].update(startPos)
+        if startPos == Config.scan['start_pos']:
+            return
+        # self.window['STARTPOSIN'].update(','.join([str(x) for x in startPos]))
+        self.window['STARTPOSVAL'].update(','.join([str(x) for x in startPos]))
+        Config.scan['start_pos'] = startPos
 
-    def input_finish_pos(self, values):
+        self.startPos = True # flag for identifying changes later
+        self.scan_change = True # flag for identifying changes later
+
+
+    def input_finish_pos(self):
         '''Parses the input text from the finish position textbox'''
-        pos = values['STARTPOSIN'].split(',')
+        pos = self.values['FINISHPOSIN'].split(',')
         try:
             x = float(pos[0].strip(' '))
             y = float(pos[1].strip(' '))
         except Exception as e:
             print(e)
-            finishPos = None
+            self.finishPos = False # flag for identifying changes later
             self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
             self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+
             return
         finishPos = (x, y)
-        self.window['FINISHPOSVAL'].update(finishPos)
+        if finishPos == Config.scan['start_pos']:
+            return
+        # self.window['FINISHPOSIN'].update(','.join([str(x) for x in finishPos]))
+        self.window['FINISHPOSVAL'].update(','.join([str(x) for x in finishPos]))
+        Config.scan['finish_pos'] = finishPos
 
-    def set_linescan_mode(self, values):
+        self.finishPos = True # flag for identifying changes later
+        self.scan_change = True # flag for identifying changes later
+
+    def set_linescan_mode(self):
         '''Sets the scan mode to linescan'''
         Config.scan['scan_type'] = 'linescan'
+        print('Scan mode: linescan')
+        self.scan_change = True # flag for identifying changes later
 
-    def set_map_mode(self, values):
+    def set_map_mode(self):
        '''Sets the scan mode to map'''
        Config.scan['scan_type'] = 'map'
-    
-    def toggle_light(self, values):
+       print('Scan mode: map')
+       self.scan_change = True # flag for identifying changes later
+   
+    def toggle_light(self):
         '''Toggles the illumination source'''
-        Config.instrument['light_on'] = not Config.instrument['light_on']
+        # Config.instrument['light_on'] = not Config.instrument['light_on']
         # light = Config.instrument['light_level']
-        if Config.instrument['loght_on']:
-            self.lightOn()
-        else:
+        if Config.instrument['light_on']:
             self.lightOff()
+        else:
+            self.lightOn()
 
-    def lightOn(self, values, val = None):
+    def lightOn(self, val = None):
         '''Turns the illumination light source on, or changes it to a different brightness level'''
         if not val:
-            val = Config.instrument['light_level']
+            val = self.values['LIGHTSL']
+        
+        self.window['LIGHTSL'].update(value=val)
+        Config.instrument['light_level'] = val
         self.window['LIGHT'].update(text='ON', button_color='white on green')
+        Config.instrument['light_on'] = True
         print('Turning on light at {} power'.format(val))
 
-    def lightOff(self, values):
+    def lightOff(self):
         '''Turns the illumination light source off'''
         self.window['LIGHT'].update(text='OFF', button_color='white on grey')
+        Config.instrument['light_on'] = False
         print('Light:0')
 
     
 
-    def print_response(self, values, a = 'a', b = 'b', c = 'c'):
+    def print_response(self, a = 'a', b = 'b', c = 'c'):
         '''dummy function for printing the response of inputs'''
 
         print(a)
         print(b)
         print(c)
     
-    def ramanMode(self, values):
-        '''Switches the microscope into Raman Mode'''
+    def warn_already_in_mode(self):
+        self.window['MODE_CHECK'].update('Alread in {} - are you sure you want to ovewrite?'.format(Config.instrument['microscope_mode']), visible = True)
+        self.window['CANCEL'].update(visible = True)
+        self.window['OVERWRITE'].update(visible = True)
 
+    def ramanMode(self):
+        '''Switches the microscope into Raman Mode'''
+        if self.event == Config.instrument['microscope_mode']:
+            self.warn_already_in_mode()
+            return
         print('NOCOM: Switching to Raman mode')
         Config.instrument['microscope_mode'] = 'RAMANMODE'
         self.lightOff()
         print('Switching complete - Ready for Raman')
 
-        # self.__pull_config()
-    def imageMode(self, values):
+    def imageMode(self):
         '''Switches the microcope into Image Mode'''
-        if Config.instrument['microscope_mode'] == 'IMAGEMODE':
+        if self.event == Config.instrument['microscope_mode']:
             self.warn_already_in_mode()
-            # BUG make this function to check and change microscope mode before next step:
+            return
         print('NOCOM: Switching to Image mode')
         print('Switching complete - Ready for imaging')
         Config.instrument['microscope_mode'] = 'IMAGEMODE'
         self.lightOn()
 
-    def switch_mode(self, values):
+    def switch_mode(self):
         '''Changes to the opposide microscope mode. Possibly redundant.'''
         if self.microMode == 'RAMANMODE':
             self.imageMode()
         elif self.microMode == 'IMAGEMODE':
             self.ramanMode()
 
-    def overwrite_mode(self, values):
+    def overwrite_mode(self):
         if Config.instrument['microscope_mode'] == 'RAMANMODE':
+            Config.instrument['microcsope_mode'] = 'IMAGEMODE'
+            self.window['IMAGEMODE'].update(default=True)
             self.ramanMode()
         elif Config.instrument['microscope_mode']  == 'IMAGEMODE':
+            Config.instrument['microcsope_mode'] = 'RAMANMODE'
+            self.window['IMAGEMODE'].update(default=True)
             self.imageMode()
 
     '''
@@ -571,12 +602,145 @@ class SimGUI:
                     [sg.Column(block_right, size=(200, 300), pad=BPAD_RIGHT_INSIDE)],
                     [sg.Column(block_home, size = (200,80), pad=BPAD_RIGHT_INSIDE)]], pad=BPAD_RIGHT, background_color=BORDER_COLOR)]]
 
-        self.window = sg.Window('Dashboard PySimpleGUI-Style', layout, margins=(0,0), background_color=BORDER_COLOR, no_titlebar=False, grab_anywhere=True)
+        self.window = sg.Window('Dashboard PySimpleGUI-Style', layout, margins=(0,0), background_color=BORDER_COLOR, no_titlebar=False, grab_anywhere=False)
 
         return self.window
 
-    def parse_input(self, values):
-        inp = values['COMIN']
+    def generate_linescan(self):
+        '''Generates a linescan which strictly maintains scan resolution by rescaling the line to the nearest length/resolution interger.'''
+        startPos = Config.scan['start_pos']
+        finishPos = Config.scan['finish_pos']
+        scanResolution = Config.scan['scan_res']
+        lineVector = (float(finishPos[0])-float(startPos[0]), float(finishPos[1])-float(startPos[1]))
+        self.scanLen = math.sqrt((lineVector[0]**2)+(lineVector[1]**2))
+
+        # arrayLen = math.ceil(self.scanLen/self.scanRes)+1
+        if self.scanLen == 0:
+            return
+        clean_array_len = round(self.scanLen/scanResolution) # used for rescaling the scan dimensions
+        scale_ratio = (clean_array_len*scanResolution)/self.scanLen
+        arrayLen = clean_array_len+1 # used for building the linescan list
+        if arrayLen == 1:
+            return
+
+        xInt = ((finishPos[0] - startPos[0])*scale_ratio)/(arrayLen-1)
+        yInt = ((finishPos[1] - startPos[1])*scale_ratio)/(arrayLen-1)
+        lineScanX = [round(startPos[0]+(xInt*index), 2) for index in list(range(arrayLen))]
+        lineScanY = [round(startPos[1]+(yInt*index), 2) for index in list(range(arrayLen))]
+
+        linescanList = [(lineScanX[idx], lineScanY[idx]) for idx in range(len(lineScanX))]
+        Config.scan['linescan_list'] = linescanList
+        print('Linescan: ', linescanList)
+        self.scanLen = len(linescanList)
+        Config.scan['scan_len'] = self.scanLen
+        
+    def update_status(self):
+        print(self.startPos)
+        print(self.finishPos)
+        print(self.scanRes)
+        if self.startPos and self.finishPos and self.scanRes:
+            self.window['SCANLEN'].update('Array size: \n{}'.format(Config.scan['scan_len']), background_color = 'green')
+        else:
+            self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+            self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
+            self.window['READY'].update(visible = False)
+            self.window['NOTREADY'].update(visible = True)
+
+        # edge case - if scan res is entered as 0
+        if Config.scan['scan_res'] == 0:
+            self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+            self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
+            self.window['READY'].update(visible = False)
+            self.window['NOTREADY'].update(visible = True)
+            self.scanRes = False
+        # edge case: if acquisition time is set as 0
+        if Config.scan['acquisition_time'] == 0:
+            self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
+            self.window['READY'].update(visible = False)
+            self.window['NOTREADY'].update(visible = True)
+            self.time = False
+        
+        # edge case: if scan len is 0:
+        if self.scanLen == 0:
+            self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
+            self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
+            self.window['READY'].update(visible = False)
+            self.window['NOTREADY'].update(visible = True)
+        # Final check if all ready
+        if self.startPos and self.finishPos and self.time and self.scanRes:
+            if self.scanLen != 0:
+                self.window['READY'].update(visible = True)
+                self.window['NOTREADY'].update(visible = False)
+    
+    def update_scan(self):
+
+        if Config.scan['scan_type'] == 'linescan':
+            self.generate_linescan()
+        if Config.scan['scan_type'] == 'map':
+            self.generate_map()
+      
+    def update_scan_time(self):
+        self.runTime = Config.scan['scan_len']*Config.scan['acquisition_time']
+
+        if self.runTime <= 60:
+            self.window['RUNTIME'].update('Est. runtime:\n{} seconds'.format(round(self.runTime,2)), background_color='green')
+        if 60 < self.runTime <= 3600:
+            self.window['RUNTIME'].update('Est. runtime:\n{} minutes'.format(round(self.runTime/60,2)), background_color='green')
+        if 3600 < self.runTime:
+            self.window['RUNTIME'].update('Est. runtime:\n{} hours'.format(round(self.runTime/3600,2)), background_color='green')
+
+    def refresh_window(self):
+        self.window['MODE_CHECK'].update(visible = False)
+        self.window['CANCEL'].update(visible = False)
+        self.window['OVERWRITE'].update(visible = False)
+
+        if self.startPos and self.finishPos and self.scanRes:
+            self.update_scan()
+        if self.startPos and self.finishPos and self.scanRes and self.time:
+            self.update_scan_time()
+
+        self.update_status()
+        return
+
+        if self.event in ['STARTPOSIN','STARTPOSBUT','FINISHPOSIN','FINISHPOSBUT','SCANRESIN','MAP','LINESCAN','ACQIN']:
+            if self.scan_change:
+                self.update_acquisition()
+
+                if self.startPos and self.finishPos and self.scanRes:
+                    if self.scanType == 'linescan':
+
+                        self.generate_linescan()
+                        self.window['SCANLEN'].update('Array size: \n{}'.format(self.scanLen), background_color = 'green')
+
+
+                    if self.scanType == 'map':
+                        self.generate_2D_arrays()
+
+
+                    if self.acquisitionTime:
+                        self.runTime = self.scanLen*self.acquisitionTime
+                        if self.runTime <= 60:
+                            self.window['RUNTIME'].update('Est. runtime:\n{} seconds'.format(round(self.runTime,2)), background_color='green')
+                        if 60 < self.runTime <= 3600:
+                            self.window['RUNTIME'].update('Est. runtime:\n{} minutes'.format(round(self.runTime/60,2)), background_color='green')
+                        if 3600 < self.runTime:
+                            self.window['RUNTIME'].update('Est. runtime:\n{} hours'.format(round(self.runTime/3600,2)), background_color='green')
+
+                    else:
+                        self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
+
+                # Does final check to make sure all variables are entered
+                if self.acquisitionTime and self.scanLen:
+                    self.window['READY'].update(visible = True)
+                    self.window['NOTREADY'].update(visible = False)
+                else:
+                    self.window['READY'].update(visible = False)
+                    self.window['NOTREADY'].update(visible = True)
+
+
+
+    def parse_input(self):
+        inp = self.values['COMIN']
         try: # searches for spaces in command
             command = inp[:inp.index(' ')]
         except:
@@ -593,8 +757,8 @@ class SimGUI:
         except:
             return command, arg
 
-    def functionCall(self, event, values):
-        self.microscopeFunctions[event](values)
+    # def do_funtion(self):
+    #     self.microscopeFunctions[self.event]()
 
     def main_loop(self):
 
@@ -602,11 +766,17 @@ class SimGUI:
                     # pass
                 # pass
         while True:             # Event Loop
-            event, values = self.window.read()
-            print('event:', event, 'values:', values)
+            self.event, self.values = self.window.read()
+            print('event:', self.event, 'values:', self.values)
+            try:
+                self.microscopeFunctionDict[self.event]()
+            except KeyError:
+                print('No function found for {}'.format(self.event))
+            # self.do_function()
+            self.refresh_window()
             continue
 
-            self.functionCall(event, values)
+
 
             
             if self.event == 'LINESCAN':
