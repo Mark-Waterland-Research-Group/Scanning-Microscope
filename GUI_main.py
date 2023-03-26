@@ -60,24 +60,6 @@ class TK_GUI:
         print("Option:", self.option_var.get())
         print("Text input:", self.text_var.get())
 
-# class MicroscopeConfig:
-#
-#     attributeList = [
-#         'microscope_mode',
-#         'light_level',
-#         'light_on',
-#         'current_position',
-#         'linescanConfig',
-#         'mapConfig'
-#         ]
-#
-#     def __init__(self, config):
-#         # print(config.__dict__)
-#         self.__dict__ = config.instrumentConfig
-#         print(config.instrumentConfig)
-#         print(self.__dict__)
-
-
 
 class Linescan:
 
@@ -126,13 +108,8 @@ class MetaFile:
 
 
     def __generate_config(self):
-        # if self.hasConfig: # check config exists
-        #     print('Config file found, returning...')
-        #     return
         self.__dict__ = {'scriptDir': self.scriptDir, 'hasConfig': True}
-
         microscope_mode = self.query_mode()
-
 
         self.instrument = {
             'microscope_mode': microscope_mode,
@@ -213,9 +190,6 @@ class SimGUI:
             # ACQUISITIONTIME: 
             
         }
-        # BUG WITH LIGHT OFF/ON
-        # BUG dont know what close_microscope triggers
-        # 
 
         # Status flags
         self.startPos = False
@@ -225,39 +199,19 @@ class SimGUI:
 
         # actual scan length
         self.scanLen = Config.scan['scan_len']
-
-
         self.config = configObject
-        # print(self.config.__dict__)
-        # self.microscope = MicroscopeConfig(self.config)
-        print(self.config.instrument)
-
 
         instrumentConfig = self.config.instrument
         scanConfig = self.config.scan
 
-        # self.scan_type = scanConfig['scan_type']
         for key, item in instrumentConfig.items():
             self.__dict__[key] = item
         for key, item in scanConfig.items():
             self.__dict__[key] = item
 
 
-
-        # self.microscope_mode = self.microscope.microscope_mode
-        # self.current_position = self.microscope.current_position
-        # self.light_level = self.microscope.light_level
-        # self.light_on = self.microscope.light_on
-        # self.current_
-
         self.linescan = Linescan(self.config.scan)
-        # print(self.linescan.__dict__)
-        # pause()
 
-        # self.scan_type = self.microscope.scan_type
-        # print(self.microscope.__dict__)
-
-        # print(self.scan_type)
 
         self.window = self.__construct_UI()
 
@@ -363,7 +317,6 @@ class SimGUI:
         self.window['ACQVAL'].update('{} second(s)'.format(aqTime))
         Config.scan['acquisition_time'] = aqTime
 
-
     def set_start_pos(self):
         '''Sets the start position as the current position'''
         currentPos = Config.instrument['current_position']
@@ -373,7 +326,6 @@ class SimGUI:
         self.window['STARTPOSIN'].update(','.join([str(x) for x in currentPos]))
         self.window['STARTPOSVAL'].update(','.join([str(x) for x in currentPos]))
 
-        
         Config.scan['start_pos'] = currentPos
         self.startPos = True # flag for identifying changes later
         self.scan_change = True # flag for identifying changes later
@@ -407,7 +359,7 @@ class SimGUI:
         startPos = (x, y)
         if startPos == Config.scan['start_pos']:
             return
-        # self.window['STARTPOSIN'].update(','.join([str(x) for x in startPos]))
+        
         self.window['STARTPOSVAL'].update(','.join([str(x) for x in startPos]))
         Config.scan['start_pos'] = startPos
 
@@ -426,12 +378,11 @@ class SimGUI:
             self.finishPos = False # flag for identifying changes later
             self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
             self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
-
             return
         finishPos = (x, y)
         if finishPos == Config.scan['start_pos']:
             return
-        # self.window['FINISHPOSIN'].update(','.join([str(x) for x in finishPos]))
+        
         self.window['FINISHPOSVAL'].update(','.join([str(x) for x in finishPos]))
         Config.scan['finish_pos'] = finishPos
 
@@ -477,7 +428,6 @@ class SimGUI:
         print('Light:0')
 
     
-
     def print_response(self, a = 'a', b = 'b', c = 'c'):
         '''dummy function for printing the response of inputs'''
 
@@ -614,7 +564,6 @@ class SimGUI:
         lineVector = (float(finishPos[0])-float(startPos[0]), float(finishPos[1])-float(startPos[1]))
         self.scanLen = math.sqrt((lineVector[0]**2)+(lineVector[1]**2))
 
-        # arrayLen = math.ceil(self.scanLen/self.scanRes)+1
         if self.scanLen == 0:
             return
         clean_array_len = round(self.scanLen/scanResolution) # used for rescaling the scan dimensions
@@ -635,9 +584,7 @@ class SimGUI:
         Config.scan['scan_len'] = self.scanLen
         
     def update_status(self):
-        print(self.startPos)
-        print(self.finishPos)
-        print(self.scanRes)
+        '''Updates all of the visual cues every time a change is made'''
         if self.startPos and self.finishPos and self.scanRes:
             self.window['SCANLEN'].update('Array size: \n{}'.format(Config.scan['scan_len']), background_color = 'green')
         else:
@@ -673,13 +620,14 @@ class SimGUI:
                 self.window['NOTREADY'].update(visible = False)
     
     def update_scan(self):
-
+        '''Updates the linescan and maps when an appropriate change is made'''
         if Config.scan['scan_type'] == 'linescan':
             self.generate_linescan()
         if Config.scan['scan_type'] == 'map':
             self.generate_map()
       
     def update_scan_time(self):
+        '''Updates the predicted scan time when a change is made'''
         self.runTime = Config.scan['scan_len']*Config.scan['acquisition_time']
 
         if self.runTime <= 60:
@@ -690,6 +638,7 @@ class SimGUI:
             self.window['RUNTIME'].update('Est. runtime:\n{} hours'.format(round(self.runTime/3600,2)), background_color='green')
 
     def refresh_window(self):
+        '''Refreshes the window after an event. Calls each update function as appropriate'''
         self.window['MODE_CHECK'].update(visible = False)
         self.window['CANCEL'].update(visible = False)
         self.window['OVERWRITE'].update(visible = False)
@@ -701,42 +650,6 @@ class SimGUI:
 
         self.update_status()
         return
-
-        if self.event in ['STARTPOSIN','STARTPOSBUT','FINISHPOSIN','FINISHPOSBUT','SCANRESIN','MAP','LINESCAN','ACQIN']:
-            if self.scan_change:
-                self.update_acquisition()
-
-                if self.startPos and self.finishPos and self.scanRes:
-                    if self.scanType == 'linescan':
-
-                        self.generate_linescan()
-                        self.window['SCANLEN'].update('Array size: \n{}'.format(self.scanLen), background_color = 'green')
-
-
-                    if self.scanType == 'map':
-                        self.generate_2D_arrays()
-
-
-                    if self.acquisitionTime:
-                        self.runTime = self.scanLen*self.acquisitionTime
-                        if self.runTime <= 60:
-                            self.window['RUNTIME'].update('Est. runtime:\n{} seconds'.format(round(self.runTime,2)), background_color='green')
-                        if 60 < self.runTime <= 3600:
-                            self.window['RUNTIME'].update('Est. runtime:\n{} minutes'.format(round(self.runTime/60,2)), background_color='green')
-                        if 3600 < self.runTime:
-                            self.window['RUNTIME'].update('Est. runtime:\n{} hours'.format(round(self.runTime/3600,2)), background_color='green')
-
-                    else:
-                        self.window['RUNTIME'].update('Est. runtime:\nN/A', background_color='red')
-
-                # Does final check to make sure all variables are entered
-                if self.acquisitionTime and self.scanLen:
-                    self.window['READY'].update(visible = True)
-                    self.window['NOTREADY'].update(visible = False)
-                else:
-                    self.window['READY'].update(visible = False)
-                    self.window['NOTREADY'].update(visible = True)
-
 
 
     def parse_input(self):
@@ -757,14 +670,9 @@ class SimGUI:
         except:
             return command, arg
 
-    # def do_funtion(self):
-    #     self.microscopeFunctions[self.event]()
 
     def main_loop(self):
-
-        # Microscope = MicroscopeFunctions()
-                    # pass
-                # pass
+        '''Main event loop'''
         while True:             # Event Loop
             self.event, self.values = self.window.read()
             print('event:', self.event, 'values:', self.values)
@@ -774,145 +682,11 @@ class SimGUI:
                 print('No function found for {}'.format(self.event))
             # self.do_function()
             self.refresh_window()
-            continue
-
-
-
-            
-            if self.event == 'LINESCAN':
-                self.scanType = 'linescan'
-            if self.event == 'MAP':
-                self.scanType = 'map'
-
-            if self.event == 'LIGHT': # adjusts lighting
-                self.light = not self.light
-                if self.light:
-                    self.lightOn()
-                else:
-                    self.lightOff()
-
-            if self.event == 'LIGHTSL':
-                self.lightLevel = self.values['LIGHTSL']
-                if self.light:
-                    self.lightOn(self.lightLevel)
-                # if self.light:
-
-            if self.event == 'STARTPOSBUT':
-                print('Setting start position as {}'.format(self.currentPos))
-                self.startPos = self.currentPos
-                self.window['STARTPOSVAL'].update(self.startPos)
-
-            if self.event == 'STARTPOSIN':
-                try:
-                    pos = np.array(self.values['STARTPOSIN'].split(',')).astype(float)
-                    self.startPos = (pos[0], pos[1])
-                    self.window['STARTPOSVAL'].update(self.startPos)
-                except Exception as e:
-                    print(e)
-                    self.startPos = None
-                    self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
-                    self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
-            elif self.event == 'FINISHPOSIN':
-                try:
-                    pos = np.array(self.values['FINISHPOSIN'].split(',')).astype(float)
-                    self.finishPos = (pos[0], pos[1])
-                    self.window['FINISHPOSVAL'].update(self.finishPos)
-                except Exception as e:
-                    print(e)
-                    self.finishPos = None
-                    self.window['RUNTIME'].update('Estimated runtime:\nN/A', background_color='red')
-                    self.window['SCANLEN'].update('Array size: \nN/A', background_color = 'red')
-
-            if self.event == 'SCANRESIN':
-                # self.scanRes = self.values['SCANRESIN']
-                try:
-                    self.scanRes = float(self.values['SCANRESIN'])
-                    self.window['SCANRESVAL'].update('{} mu m'.format(self.scanRes))
-                except:
-                    pass
-
-            if self.event == 'ACQIN':
-                try:
-                    self.acquisitionTime = float(self.values['ACQIN'])
-                    self.window['ACQVAL'].update('{} second(s)'.format(self.acquisitionTime))
-                except:
-                    self.acquisitionTime = None
-                    pass
-
-            if self.event == sg.WIN_CLOSED or self.event == 'Exit':
-                break
-            print(self.event)
-            print(self.values)
-            if self.event == 'CANCEL':
-                self.window['MODE_CHECK'].update(visible = False)
-                self.window['CANCEL'].update(visible = False)
-                self.window['OVERWRITE'].update(visible = False)
-                continue
-
-            if self.event == 'OVERWRITE': # Forces microscope mode change
-                self.overwrite_mode()
-
-            if self.event == 'IMAGEMODE' or self.event == 'RAMANMODE': # if microscope mode is selected
-                self.event_radio()
-                continue
-
-            if self.event == 'STEPIN': # adjusts the motion step size (value)
-                try:
-                    stepSize = float(self.values['STEPIN'])
-                    if 0.05 <= stepSize <= 5000:
-                        self.window['STEP'].update(stepSize)
-                except:
-                    pass
-                continue
-
-            if self.event == 'STEPSL': # adjusts the motion step size (slider)
-                stepSize = float(self.values['STEPSL'])
-                self.window['STEP'].update(int(stepSize))
-                self.window['STEPIN'].update(int(stepSize))
-                continue
-
-            if self.event == 'SUBMIT':
-                com = self.values['COMIN']
-                if com == '':
-                    continue
-                self.window['COM'].update('Enter commands')
-                command, arg = self.parse_input(com)
-                print(command)
-                print(arg)
-
-                try:
-                    if not arg:
-                        self.commandDict[command]()
-                    else:
-                        self.commandDict[command](*arg)
-                    self.window['COMIN'].update('')
-                except Exception as e:
-                    print(e)
-                    self.window['COM'].update('Command "{}" not recognised.\n{}'.format(com, e))
-
-
-
-            self.refresh_window()
-
-
-
-    # def __pull_config(self):
-        # takes the config items and puts relevant information into attributes
-        # for key, item in self.config.__dict__.items():
-        #     if key in MicroscopeConfig.attributeList:
-        #         self.__dict__[key] = item
-
 
 if __name__ == "__main__":
     Config = MetaFile()
     Win = SimGUI(Config)
-    # Microscope = MicroscopeFunctions()
-    # mf = MetaFile()
-    # mf._save_config(makeNew = True)
-    # print(mf.__dict__)
-    # win.config._save_config(makeNew = True)
 
-    # print(Win.config.__dict__)
     print(Config.__dict__)
     Win.main_loop()
     '''
