@@ -476,6 +476,11 @@ class SimGUI:
             Config.instrument['microcsope_mode'] = 'RAMANMODE'
             self.window['IMAGEMODE'].update(default=True)
             self.imageMode()
+        
+        # returns window to normal status
+        self.window['MODE_CHECK'].update(visible = False)
+        self.window['CANCEL'].update(visible = False)
+        self.window['OVERWRITE'].update(visible = False)
 
     '''
     --------------------------------
@@ -639,9 +644,6 @@ class SimGUI:
 
     def refresh_window(self):
         '''Refreshes the window after an event. Calls each update function as appropriate'''
-        self.window['MODE_CHECK'].update(visible = False)
-        self.window['CANCEL'].update(visible = False)
-        self.window['OVERWRITE'].update(visible = False)
 
         if self.startPos and self.finishPos and self.scanRes:
             self.update_scan()
