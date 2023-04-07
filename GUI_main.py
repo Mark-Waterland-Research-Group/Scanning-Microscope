@@ -9,79 +9,7 @@ from tkinter import ttk
 
 def pause(text = '---'):
     input(text)
-
-class TK_GUI:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Example GUI")
-
-        # Define ttk style for the GUI
-        s = ttk.Style()
-        s.theme_use('winnative')
-        print(s.theme_names())
-
-        # Create a frame for the main window
-        main_frame = ttk.Frame(self.master, padding="30 20 30 20")
-        main_frame.grid(column=0, row=0, sticky="nsew")
-
-        # Create a drop-down menu
-        options = ["Option 1", "Option 2", "Option 3", 'This is custom']
-        self.option_var = tk.StringVar()
-        self.option_var.set(options[0])
-        option_menu = ttk.OptionMenu(main_frame, self.option_var, *options)
-        option_menu.grid(column=0, row=1, padx=10, pady=10, sticky="w")
-
-        # Create a text input box
-        self.text_var = tk.StringVar()
-        text_entry = ttk.Entry(main_frame, textvariable=self.text_var)
-        text_entry.grid(column=0, row=0, padx=10, pady=10, sticky="we")
-        text_entry.focus()
-
-        # Create a button
-        button = ttk.Button(main_frame, text="Click me", command=self.button_callback)
-        button.grid(column=2, row=0, padx=10, pady=10, sticky="e")
-
-        # Create a tabbed notebook with extra options
-        notebook = ttk.Notebook(main_frame)
-        notebook.grid(column=0, row=2, columnspan=3, padx=10, pady=10, sticky="nsew")
-
-        # Create the first tab
-        tab1 = ttk.Frame(notebook)
-        notebook.add(tab1, text="Tab 1")
-        ttk.Label(tab1, text="This is the first tab").grid(column=0, row=0)
-
-        # Create the second tab
-        tab2 = ttk.Frame(notebook)
-        notebook.add(tab2, text="Tab 2")
-        ttk.Label(tab2, text="This is the second tab").grid(column=0, row=0)
-
-    def button_callback(self):
-        # Callback function for the button
-        print("Option:", self.option_var.get())
-        print("Text input:", self.text_var.get())
-
-
-class Linescan:
-
-    attributeList = [
-        'scan_res',
-        'scan_len',
-        'acquisition_time',
-        'x_scan',
-        'y_scan',
-        'start_pos',
-        'finish_pos'
-        ]
-
-    def __init__(self, configDict):
-        self.__dict__ = {key:value for (key, value) in configDict.items() if key in Linescan.attributeList}
-    pass
-
-class Map:
-    pass
-
-class JustMove:
-    pass
+    
 
 class MetaFile:
 
@@ -104,8 +32,6 @@ class MetaFile:
                 continue
             return mode
             # break
-
-
 
     def __generate_config(self):
         self.__dict__ = {'scriptDir': self.scriptDir, 'hasConfig': True}
@@ -210,7 +136,7 @@ class SimGUI:
             self.__dict__[key] = item
 
 
-        self.linescan = Linescan(self.config.scan)
+        # self.linescan = Linescan(self.config.scan)
 
 
         self.window = self.__construct_UI()
@@ -224,6 +150,7 @@ class SimGUI:
     def do_nothing(self):
         pass
     def run_scan(self):
+
         pass
     def move_to_position(self, position):
         print('NOCOM: Moving to position {}'.format(position))
@@ -560,6 +487,48 @@ class SimGUI:
         self.window = sg.Window('Dashboard PySimpleGUI-Style', layout, margins=(0,0), background_color=BORDER_COLOR, no_titlebar=False, grab_anywhere=False)
 
         return self.window
+
+    def generate_map(self):
+        startPos = Config.scan['start_pos']
+        finishPos = Config.scan['finish_pos']
+        scanRes = Config.scan['scan_res']
+
+        deltaX = finishPos[0]-startPos[0]
+        deltaY = finishPos[1]-startPos[1]
+
+        if deltaX > 0:
+            xStep = scanRes
+        if deltaX < 0:
+            xStep = scanRes*-1
+
+        if deltaY > 0:
+            yStep = scanRes
+        if deltaY < 0:
+            yStep = scanRes*-1
+
+        print(xStep)
+        lenX = math.floor(abs(deltaX/xStep))
+        lenY = math.floor(abs(deltaY/yStep))
+
+        xScan = [startPos[0]+(xStep*index) for index in list(range(lenX+1))]
+        yScan = [startPos[1]+(yStep*index) for index in list(range(lenY+1))]
+
+        print('xScan:', self.xScan)
+        print('yScan:', self.yScan)
+
+        if len(xScan) == 0 or len(yScan)== 0:
+            print('resolution error - please enter appropriate resolution for image size')
+
+        self.posDict = {}
+        self.mapList = []
+        for j in self.yScan:
+            for i in self.xScan:
+                pos = (i, j)
+                self.mapList.append(pos)
+                self.posDict['{},{}'.format(i,j)] = (pos)
+        #
+        self.scanLen = len(self.posDict)
+        # return xScan, yScan
 
     def generate_linescan(self):
         '''Generates a linescan which strictly maintains scan resolution by rescaling the line to the nearest length/resolution interger.'''
