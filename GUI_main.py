@@ -11,6 +11,13 @@ def pause(text = '---'):
     input(text)
     
 
+class Linescan:
+
+    def __init__(self, config):
+        self.__dict__ = {key: value for (key, value) in config.items()}
+        pass
+        
+
 class MetaFile:
 
     def __init__(self):
@@ -136,7 +143,7 @@ class SimGUI:
             self.__dict__[key] = item
 
 
-        # self.linescan = Linescan(self.config.scan)
+        self.linescan = Linescan(self.config.scan)
 
 
         self.window = self.__construct_UI()
