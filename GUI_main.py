@@ -126,7 +126,8 @@ class SimGUI:
             'FOCUSIN': self.set_focus_step,
             '-FOCUSUP-' : self.focus_up,
             '-FOCUSDOWN-' : self.focus_down,
-            '-FOCUSOSC-' : self.focus_osc
+            '-FOCUSOSC-' : self.focus_osc,
+            'TRACKZ': self.toggle_track_z
             # SCANRES:
             # ACQUISITIONTIME:
 
@@ -137,7 +138,10 @@ class SimGUI:
         self.finishPos = False
         self.time = True
         self.scanRes = True
+        
+        # Transient settings
         self.focus_step = 1
+        self.track_z = False
 
         # actual scan length
         self.scanLen = Config.scan['scan_len']
@@ -167,6 +171,16 @@ class SimGUI:
     def run_scan(self):
 
         pass
+
+    def toggle_track_z(self):
+        self.track_z = self.window['TRACKZ'].get()
+        print(self.track_z)
+        if self.track_z:
+            print('Tracking Z position enabled')
+            self.window['TRACKZ'].update(background_color='green')
+        else:
+            print('Tracking Z position disabled')
+            self.window['TRACKZ'].update(background_color='red')
 
     def set_focus_step(self):
         step = self.window['FOCUSIN'].get()
@@ -519,11 +533,13 @@ class SimGUI:
         
         block_focus = [
             [sg.T('Focus', font='Any 12')],
-            [sg.Button(sg.SYMBOL_UP_ARROWHEAD, size=(4, 2), key='-FOCUSUP-', enable_events=True)],
-            [sg.Button(sg.SYMBOL_CIRCLE_OUTLINE, size=(4, 2), key='-FOCUSOSC-', enable_events=True)],
-            [sg.Button(sg.SYMBOL_DOWN_ARROWHEAD, size=(4, 2), key='-FOCUSDOWN-', enable_events=True)],
-            [sg.In(size=(5, 1), key='FOCUSIN', enable_events=True, visible=True)],
-            [sg.Text(self.focus_step, key='FOCUSVAL', size=(5, 1), visible=True)]
+            [sg.Button(sg.SYMBOL_UP_ARROWHEAD, size=(4, 2), key='-FOCUSUP-', enable_events=True, tooltip='Move focus up by {} microns'.format(self.focus_step))],
+            [sg.Button(sg.SYMBOL_CIRCLE_OUTLINE, size=(4, 2), key='-FOCUSOSC-', enable_events=True, tooltip='Jog the focus up and down to check focus')],
+            [sg.Button(sg.SYMBOL_DOWN_ARROWHEAD, size=(4, 2), key='-FOCUSDOWN-', enable_events=True, tooltip='Move focus down by {} microns'.format(self.focus_step))],
+            [sg.In(size=(5, 1), key='FOCUSIN', enable_events=True, visible=True, tooltip='Focus step size in microns')],
+            [sg.Text(self.focus_step, key='FOCUSVAL', size=(5, 1), visible=True)],
+            [# adds a checkbox enables tracking of Z position
+                sg.Checkbox('Track Z\nPosition', key='TRACKZ', enable_events=True, default=False, visible=True, text_color='white', background_color='red', tooltip='Track Z position during positioning and scanning', font='Any 10')]
         ]
 
         block_right = [[sg.Text('Motion control', font='Any 12')],
