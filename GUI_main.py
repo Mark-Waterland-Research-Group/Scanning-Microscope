@@ -143,7 +143,7 @@ class SimGUI:
             self.__dict__[key] = item
 
 
-        self.linescan = Linescan(self.config.scan)
+        # self.linescan = Linescan(self.config.scan)
 
 
         self.window = self.__construct_UI()
@@ -476,7 +476,7 @@ class SimGUI:
 
                     # , [sg.T('{}, {}'.format(*self.current_position), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
-        block_mid = [[sg.T('Array size: \n{}'.format(self.linescan.scan_len if self.linescan.scan_len else 'N/A'), size = (19,2), background_color = 'red', font = (SimGUI.deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (SimGUI.deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (SimGUI.deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (SimGUI.deja, 10), size = (19,2), key='READY', visible = False)]]
+        block_mid = [[sg.T('Array size: \n{}'.format(Config.scan['scan_len'] if Config.scan['scan_len'] else 'N/A'), size = (19,2), background_color = 'red', font = (SimGUI.deja, 10), justification = 'centre', key='SCANLEN')],[sg.T('Est. runtime: \nN/A', font = (SimGUI.deja, 10), size = (19,2), justification = 'centre', background_color='red', key='RUNTIME')],[sg.T('Scan Not Ready', font = (SimGUI.deja, 10), size = (19,2), background_color='red', key='NOTREADY')], [sg.Button('Scan Ready\n START', font = (SimGUI.deja, 10), size = (19,2), key='READY', visible = False)]]
 
 
         layout = [
@@ -545,8 +545,9 @@ class SimGUI:
         lineVector = (float(finishPos[0])-float(startPos[0]), float(finishPos[1])-float(startPos[1]))
         self.scanLen = math.sqrt((lineVector[0]**2)+(lineVector[1]**2))
 
-        if self.scanLen == 0:
+        if self.scanLen == 0 or scanResolution == 0:
             return
+
         clean_array_len = round(self.scanLen/scanResolution) # used for rescaling the scan dimensions
         scale_ratio = (clean_array_len*scanResolution)/self.scanLen
         arrayLen = clean_array_len+1 # used for building the linescan list
