@@ -110,10 +110,10 @@ class SimGUI:
             'FINISHPOSIN': self.input_finish_pos,
             'SCANRESIN': self.set_scan_res,
             'ACQIN': self.set_acquisition_time,
-            'SYMBOL_LEFT_ARROWHEAD': self.move_stage_left,
-            'SYMBOL_RIGHT_ARROWHEAD': self.move_stage_right,
-            'SYMBOL_UP_ARROWHEAD': self.move_stage_up,
-            'SYMBOL_DOWN_ARROWHEAD': self.move_stage_down,
+            'MOVE-LEFT': self.move_stage_left,
+            'MOVE-RIGHT': self.move_stage_right,
+            'MOVE-UP': self.move_stage_up,
+            'MOVE-DOWN': self.move_stage_down,
             'STEPIN': self.set_step_size,
             'STEPSL': self.set_step_size_slider,
             'SETHOME': self.set_home_position,
@@ -127,7 +127,8 @@ class SimGUI:
             '-FOCUSUP-' : self.focus_up,
             '-FOCUSDOWN-' : self.focus_down,
             '-FOCUSOSC-' : self.focus_osc,
-            'TRACKZ': self.toggle_track_z
+            'TRACKZ': self.toggle_track_z,
+            # sg.SYMBOL_LEFT_ARROWHEAD: self.move_stage_left,
             # SCANRES:
             # ACQUISITIONTIME:
 
@@ -142,6 +143,7 @@ class SimGUI:
         # Transient settings
         self.focus_step = 1
         self.track_z = False
+        self.stepSize = 10
 
         # actual scan length
         self.scanLen = Config.scan['scan_len']
@@ -195,9 +197,11 @@ class SimGUI:
             self.window['FOCUSVAL'].update(value=self.focus_step)
 
     def focus_up(self):
+        Config.instrument['current_position'][2] += self.focus_step
         print('NOCOM: Focusing up {}'.format(self.focus_step))    
 
     def focus_down(self):
+        Config.instrument['current_position'][2] -= self.focus_step
         print('NOCOM: Focusing down {}'.format(self.focus_step))
 
     def focus_osc(self):
@@ -205,25 +209,33 @@ class SimGUI:
 
     def move_to_position(self, position):
         print('NOCOM: Moving to position {}'.format(position))
+        Config.instrument['current_position'] = position
 
     def set_home_position(self):
         print('NOCOM: Setting home position to {}'.format(Config.instrument['current_position']))
         Config.instrument['home_position'] = Config.instrument['current_position']
 
     def move_to_home_position(self):
+        print(Config.instrument['home_position'])
         self.move_to_position(Config.instrument['home_position'])
+        self.refresh_window()
+
 
     def move_stage_left(self):
-        print('NOCOM: Moving stage x+{}'.format(self.stepSize))
+        Config.instrument['current_position'][0] += self.stepSize
+        print('NOCOM: Moving stage x + {} microns'.format(self.stepSize))
 
     def move_stage_right(self):
-        print('NOCOM: Moving stage +-{}'.format(self.stepSize))
+        Config.instrument['current_position'][0] -= self.stepSize
+        print('NOCOM: Moving stage x - {} microns '.format(self.stepSize))
 
     def move_stage_up(self):
-        print('NOCOM: Moving stage y-{}'.format(self.stepSize))
+        Config.instrument['current_position'][1] -= self.stepSize
+        print('NOCOM: Moving stage y - {} microns'.format(self.stepSize))
 
     def move_stage_down(self):
-        print('NOCOM: Moving stage y+{}'.format(self.stepSize))
+        Config.instrument['current_position'][1] += self.stepSize
+        print('NOCOM: Moving stage y + {} microns'.format(self.stepSize))
 
     def set_step_size(self):
         '''Sets the motion step size from the step size input textbox'''
@@ -241,7 +253,9 @@ class SimGUI:
                 self.window['STEPSL'].update(stepSize)
                 self.stepSize = stepSize
         except:
-            pass
+            return
+
+        print('Step size set to {} microns'.format(stepSize))
 
     def set_step_size_slider(self):
         '''Sets the step size read from the slider'''
@@ -544,16 +558,16 @@ class SimGUI:
 
         block_right = [[sg.Text('Motion control', font='Any 12')],
                        [sg.Button(size=(4, 2), key='-UL-', enable_events=True), sg.Button(
-                           sg.SYMBOL_UP_ARROWHEAD, size=(4, 2)), sg.Button(size=(4, 2))],
-                       [sg.Button(sg.SYMBOL_LEFT_ARROWHEAD, size=(4, 2)), sg.Button(
-                           size=(4, 2)), sg.Button(sg.SYMBOL_RIGHT_ARROWHEAD, size=(4, 2))],
+                           sg.SYMBOL_UP_ARROWHEAD, key='MOVE-UP', size=(4, 2)), sg.Button(size=(4, 2))],
+                       [sg.Button(sg.SYMBOL_LEFT_ARROWHEAD, key='MOVE-LEFT', size=(4, 2)), sg.Button(
+                           size=(4, 2)), sg.Button(sg.SYMBOL_RIGHT_ARROWHEAD, key='MOVE-RIGHT', size=(4, 2))],
                        [sg.Button(size=(4, 2)), sg.Button(
-                           sg.SYMBOL_DOWN_ARROWHEAD, size=(4, 2)), sg.Button(size=(4, 2))],
+                           sg.SYMBOL_DOWN_ARROWHEAD, key='MOVE-DOWN', size=(4, 2)), sg.Button(size=(4, 2))],
                        [sg.T('Step size (micron)', font='Any 12')],
                        [sg.In(size=(4, 1), key='STEPIN', enable_events=True), sg.T(stepSize, key='STEP')],           [sg.Slider(range=(1, 1000), size=(15, 15), key='STEPSL', default_value=10, resolution=1, enable_events=True, orientation='h')]]
 
         block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME')],
-                      [sg.T('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in self.current_position])), font=(SimGUI.deja, 10), size=(14, 2), text_color='white', background_color='green', justification='centre')]]
+                      [sg.T('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in self.current_position])), key='CURRENTPOS', font=(SimGUI.deja, 10), size=(22, 2), text_color='white', background_color='green', justification='centre')]]
 
         # , [sg.T('{}, {}'.format(*self.current_position), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
@@ -698,6 +712,8 @@ class SimGUI:
             if self.scanLen != 0:
                 self.window['READY'].update(visible=True)
                 self.window['NOTREADY'].update(visible=False)
+        
+        self.window['CURRENTPOS'].update('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in self.current_position])))
 
     def update_scan(self):
         '''Updates the linescan and maps when an appropriate change is made'''
