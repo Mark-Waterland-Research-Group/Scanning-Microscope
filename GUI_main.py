@@ -128,6 +128,8 @@ class SimGUI:
             '-FOCUSDOWN-' : self.focus_down,
             '-FOCUSOSC-' : self.focus_osc,
             'TRACKZ': self.toggle_track_z,
+            'SETORIGIN': self.set_origin,
+            
             # sg.SYMBOL_LEFT_ARROWHEAD: self.move_stage_left,
             # SCANRES:
             # ACQUISITIONTIME:
@@ -184,6 +186,11 @@ class SimGUI:
             print('Tracking Z position disabled')
             self.window['TRACKZ'].update(background_color='red')
 
+    def zero_z(self):
+        print('NOCOM: Zeroing Z position')
+        Config.instrument['current_position'][2] = 0
+
+
     def set_focus_step(self):
         step = self.window['FOCUSIN'].get()
         try:
@@ -212,14 +219,19 @@ class SimGUI:
         Config.instrument['current_position'] = position
 
     def set_home_position(self):
+        # home = Config.instrument['home_position']
         print('NOCOM: Setting home position to {}'.format(Config.instrument['current_position']))
-        Config.instrument['home_position'] = Config.instrument['current_position']
+        Config.instrument['home_position'] = [x for x in Config.instrument['current_position']]
 
     def move_to_home_position(self):
+        print('home pos')
         print(Config.instrument['home_position'])
         self.move_to_position(Config.instrument['home_position'])
         self.refresh_window()
 
+    def set_origin(self):
+        print('NOCOM: Setting current position to origin (0, 0, 0)')
+        Config.instrument['current_position'] = [0, 0, 0]
 
     def move_stage_left(self):
         Config.instrument['current_position'][0] += self.stepSize
@@ -566,10 +578,10 @@ class SimGUI:
                        [sg.T('Step size (micron)', font='Any 12')],
                        [sg.In(size=(4, 1), key='STEPIN', enable_events=True), sg.T(stepSize, key='STEP')],           [sg.Slider(range=(1, 1000), size=(15, 15), key='STEPSL', default_value=10, resolution=1, enable_events=True, orientation='h')]]
 
-        block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME')],
-                      [sg.T('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in self.current_position])), key='CURRENTPOS', font=(SimGUI.deja, 10), size=(22, 2), text_color='white', background_color='green', justification='centre')]]
+        block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME'), sg.Button('Set Origin', key='SETORIGIN')],
+                      [sg.T('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in Config.instrument['current_position']])), key='CURRENTPOS', font=(SimGUI.deja, 10), size=(27, 2), text_color='white', background_color='green', justification='centre')]]
 
-        # , [sg.T('{}, {}'.format(*self.current_position), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
+        # , [sg.T('{}, {}'.format(*Config.instrument['current_position']), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
 
 
 
@@ -587,7 +599,7 @@ class SimGUI:
                     [sg.Column(block_focus, size=(100, 300), pad=BPAD_RIGHT_INSIDE),
                     sg.Column(block_right, size=(200, 300),
                                pad=BPAD_RIGHT_INSIDE)],
-                    [sg.Column(block_home, size=(200, 80), pad=BPAD_RIGHT_INSIDE)]], pad=BPAD_RIGHT, background_color=BORDER_COLOR)]]
+                    [sg.Column(block_home, size=(300, 80), pad=BPAD_RIGHT_INSIDE)]], pad=BPAD_RIGHT, background_color=BORDER_COLOR)]]
 
         self.window = sg.Window('Dashboard PySimpleGUI-Style', layout, margins=(
             0, 0), background_color=BORDER_COLOR, no_titlebar=False, grab_anywhere=False)
@@ -713,7 +725,7 @@ class SimGUI:
                 self.window['READY'].update(visible=True)
                 self.window['NOTREADY'].update(visible=False)
         
-        self.window['CURRENTPOS'].update('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in self.current_position])))
+        self.window['CURRENTPOS'].update('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in Config.instrument['current_position']])))
 
     def update_scan(self):
         '''Updates the linescan and maps when an appropriate change is made'''
@@ -738,6 +750,9 @@ class SimGUI:
 
     def refresh_window(self):
         '''Refreshes the window after an event. Calls each update function as appropriate'''
+
+        print(Config.instrument)
+        print(Config.scan)
 
         if self.startPos and self.finishPos and self.scanRes:
             self.update_scan()

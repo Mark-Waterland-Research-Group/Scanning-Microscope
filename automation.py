@@ -89,13 +89,5 @@ filename = "CVD1line1"
 motorSpeed = 500
 basetravelpersecond = 20
 travelTime = 2
-while True:
-    currentMode = input('Enter current mode: "raman" or "image":\n')
-    if currentMode == "raman" or currentMode =='image':
-        break
-    else:
-        print('Error - please enter "Raman" or "Image".')
-
-inp = input("Change directory and run tests, then press <Enter> to continue")
 
 s, currentPos, commandDict, commandList = initializeGRBL(motorSpeed, comPort)

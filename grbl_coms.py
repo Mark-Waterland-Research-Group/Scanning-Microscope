@@ -20,6 +20,7 @@ def open_serial_port(baudrate=115200):
                 return ser
             except Exception as e:
                 print(e)
+    
             
 
 
