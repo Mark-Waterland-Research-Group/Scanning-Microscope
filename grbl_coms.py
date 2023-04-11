@@ -5,8 +5,16 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+class SerialComs:
+
+    def __init__(self, com_port=None, baudrate=115200):
+        if com_port == None:
+            self.serial = open_serial_port(baudrate)
+        else:
+            self.serial = serial.Serial(com_port, baudrate=baudrate, timeout=1)
+
 def open_serial_port(baudrate=115200):
-    # Scan for available COM ports
+    '''Search for available COM ports and return the first one that can be opened'''
     ports = list(serial.tools.list_ports.comports())
 
     if len(ports) == 0:
@@ -20,34 +28,19 @@ def open_serial_port(baudrate=115200):
                 return ser
             except Exception as e:
                 print(e)
-    
-            
 
-
-
-
-class GRBL_comms:
-
-    def __init__(self):
-        self.serial = open_serial_port()
 
     def send_gcode(self, code, delay = None):
-        '''# REFACTOR'''
+        '''Send gcode to controller'''
         if isinstance(code, str):
             print('Sending: ' + str(code))
             self.serial.write(str.encode(str(code)+'\n'))
             grbl_out = self.serial.readline() # Wait for grbl response with carriage return
             print(' : ' + str(grbl_out.strip()))
-        elif isinstance(code, list):
-            for item in code:
-                print('Sending: ' + str(item))
-                self.serial.write(str.encode(str(item)+'\n'))
-                grbl_out = self.serial.readline() # Wait for grbl response with carriage return
-                print(' : ' + str(grbl_out.strip()))
-                if delay:
-                    time.sleep(delay)
+            if delay != None:
+                time.sleep(delay)
         else:
-            print('Incorrect code format: please enter gcode as a string or list of strings.')
+            print('Incorrect code format: please enter gcode as a string.')
 
 
     def move_absolute(self, currentPos, newPos):

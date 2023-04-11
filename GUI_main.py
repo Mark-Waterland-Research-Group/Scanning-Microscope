@@ -33,6 +33,7 @@ class MetaFile:
             self.__write_config_file()
 
     def query_mode(self):
+        '''Asks user for microscope mode.'''
         while True:
             mode = input(
                 'Please enter current microscope configuration: "image" or "raman"\n')
@@ -44,6 +45,7 @@ class MetaFile:
             # break
 
     def __generate_config(self):
+        '''Generates a new config file.'''
         self.__dict__ = {'scriptDir': self.scriptDir, 'hasConfig': True}
         microscope_mode = self.query_mode()
 
@@ -71,6 +73,7 @@ class MetaFile:
         self.hasConfig = True
 
     def __write_config_file(self):
+        '''Writes the config file to disk.'''
         filePath = os.path.join(self.scriptDir, 'microscope_config.json')
 
         with open(filePath, 'w') as jsonFile:
@@ -78,6 +81,7 @@ class MetaFile:
         print('Saved config')
 
     def __load_config_file(self):
+        '''Loads the config file from disk.'''
         filePath = os.path.join(self.scriptDir, 'microscope_config.json')
 
         with open(filePath, 'r') as jsonFile:
@@ -85,6 +89,7 @@ class MetaFile:
         print('Loaded config')
 
     def _save_config(self, makeNew=False):
+        '''Saves the config file to disk.'''
         if makeNew:
             self.__generate_config()
         self.__write_config_file()
@@ -129,7 +134,8 @@ class SimGUI:
             '-FOCUSOSC-' : self.focus_osc,
             'TRACKZ': self.toggle_track_z,
             'SETORIGIN': self.set_origin,
-            
+            'ZEROZ': self.zero_z
+
             # sg.SYMBOL_LEFT_ARROWHEAD: self.move_stage_left,
             # SCANRES:
             # ACQUISITIONTIME:
@@ -145,6 +151,7 @@ class SimGUI:
         # Transient settings
         self.focus_step = 1
         self.track_z = False
+        self.default_z_pos = 0
         self.stepSize = 10
 
         # actual scan length
@@ -177,6 +184,8 @@ class SimGUI:
         pass
 
     def toggle_track_z(self):
+        '''Turns on or off the tracking of z position in the Config object. Use this when you want to keep track of changes in the sample height or focus position. If a sample is planar and in focus, leave tracking off.'''
+
         self.track_z = self.window['TRACKZ'].get()
         print(self.track_z)
         if self.track_z:
@@ -187,11 +196,13 @@ class SimGUI:
             self.window['TRACKZ'].update(background_color='red')
 
     def zero_z(self):
+        '''Makes the current Z position zero in the config object/current position tracker.'''
         print('NOCOM: Zeroing Z position')
         Config.instrument['current_position'][2] = 0
 
 
     def set_focus_step(self):
+        '''Sets the focus step size in microns.'''
         step = self.window['FOCUSIN'].get()
         try:
             step = float(step)
@@ -204,48 +215,70 @@ class SimGUI:
             self.window['FOCUSVAL'].update(value=self.focus_step)
 
     def focus_up(self):
-        Config.instrument['current_position'][2] += self.focus_step
+        '''Moves the focus up by the focus step size.'''
+
+        if self.track_z:
+            Config.instrument['current_position'][2] += self.focus_step
         print('NOCOM: Focusing up {}'.format(self.focus_step))    
+        # send gcode for focus up
 
     def focus_down(self):
-        Config.instrument['current_position'][2] -= self.focus_step
+        '''Moves the focus down by the focus step size.'''
+        if self.track_z:
+            Config.instrument['current_position'][2] -= self.focus_step
         print('NOCOM: Focusing down {}'.format(self.focus_step))
+        # send gcode for focus down
 
     def focus_osc(self):
+        '''When close to the focal point, click this button to pass through the focal point and back again to help see when the focus is achieved.'''
         print('NOCOM: Oscillating Focus')
+        # send gcode for focus oscillation
 
     def move_to_position(self, position):
+        '''Moves the stage to the specified position.'''
+
         print('NOCOM: Moving to position {}'.format(position))
         Config.instrument['current_position'] = position
+        # send gcode for moving to position
 
     def set_home_position(self):
+        '''Sets the home position to the current position.'''
         # home = Config.instrument['home_position']
         print('NOCOM: Setting home position to {}'.format(Config.instrument['current_position']))
+        # if not self.track_z:
+        #     Config.instrument['current_position'][2] = self.default_z_pos
         Config.instrument['home_position'] = [x for x in Config.instrument['current_position']]
 
     def move_to_home_position(self):
+        '''Moves the stage to the home position.'''
         print('home pos')
         print(Config.instrument['home_position'])
         self.move_to_position(Config.instrument['home_position'])
         self.refresh_window()
 
     def set_origin(self):
+        '''Sets the origin to the current position (i.e. here is 0, 0, 0).'''
         print('NOCOM: Setting current position to origin (0, 0, 0)')
         Config.instrument['current_position'] = [0, 0, 0]
+        self.default_z_pos = 0
 
     def move_stage_left(self):
+        '''Moves the stage left by the step size.'''
         Config.instrument['current_position'][0] += self.stepSize
         print('NOCOM: Moving stage x + {} microns'.format(self.stepSize))
 
     def move_stage_right(self):
+        '''Moves the stage right by the step size.'''
         Config.instrument['current_position'][0] -= self.stepSize
         print('NOCOM: Moving stage x - {} microns '.format(self.stepSize))
 
     def move_stage_up(self):
+        '''Moves the stage up by the step size.'''
         Config.instrument['current_position'][1] -= self.stepSize
         print('NOCOM: Moving stage y - {} microns'.format(self.stepSize))
 
     def move_stage_down(self):
+        '''Moves the stage down by the step size.'''
         Config.instrument['current_position'][1] += self.stepSize
         print('NOCOM: Moving stage y + {} microns'.format(self.stepSize))
 
@@ -274,6 +307,7 @@ class SimGUI:
         stepSize = int(self.values['STEPSL'])
         self.window['STEP'].update(int(stepSize))
         self.window['STEPIN'].update(int(stepSize))
+        self.stepSize = stepSize
 
     def cancel_overwrite(self):
         '''Cancels the override warning box and returns to normal use'''
@@ -284,7 +318,7 @@ class SimGUI:
             Config.instrument['microscope_mode']))
 
     def confirm_overwrite(self):
-        '''Checks the microcope mode and changes it to the opposide type. This will be redundnat if I can put some sensors in to detect mode configuration.'''
+        '''Checks the microcope mode and changes it to the opposite type. This will be redundnat if I can put some sensors in to detect mode configuration.'''
         print('Overwriting current mode...')
         if Config.instrument['microscope_mode'] == 'IMAGEMODE':
             Config.instrument['microscope_mode'] = 'RAMANMODE'
@@ -488,6 +522,7 @@ class SimGUI:
             self.ramanMode()
 
     def overwrite_mode(self):
+        '''Allows overwriting of the current microscope mode. Will change to the opposite mode even if already in that mode, so check the microscope carefully before using this.'''
         if Config.instrument['microscope_mode'] == 'RAMANMODE':
             Config.instrument['microcsope_mode'] = 'IMAGEMODE'
             self.window['IMAGEMODE'].update(default=True)
@@ -509,6 +544,7 @@ class SimGUI:
     '''
 
     def __construct_UI(self):
+        '''Constructs the UI using PySimpleGUI'''
 
         theme_dict = {'BACKGROUND': '#2B475D',
                       'TEXT': '#FFFFFF',
@@ -578,7 +614,7 @@ class SimGUI:
                        [sg.T('Step size (micron)', font='Any 12')],
                        [sg.In(size=(4, 1), key='STEPIN', enable_events=True), sg.T(stepSize, key='STEP')],           [sg.Slider(range=(1, 1000), size=(15, 15), key='STEPSL', default_value=10, resolution=1, enable_events=True, orientation='h')]]
 
-        block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME'), sg.Button('Set Origin', key='SETORIGIN')],
+        block_home = [[sg.Button('Set Home', key='SETHOME'), sg.Button('Go Home', key='GOHOME'), sg.Button('Set Origin', key='SETORIGIN'), sg.Button('Zero Z', key='ZEROZ')],
                       [sg.T('Current Pos\n{}  xyz'.format(', '.join([str(x) for x in Config.instrument['current_position']])), key='CURRENTPOS', font=(SimGUI.deja, 10), size=(27, 2), text_color='white', background_color='green', justification='centre')]]
 
         # , [sg.T('{}, {}'.format(*Config.instrument['current_position']), font = (SimGUI.deja, 10), expand_x=False, size = (10, 1), key = 'SCANRESVAL', relief = 'flat', text_color = 'white', background_color='green', border_width = 1, justification = 'centre')]]
@@ -607,6 +643,7 @@ class SimGUI:
         return self.window
 
     def generate_map(self):
+        '''Generates two lists which are used to construct a grid of positions to scan over'''
         startPos = Config.scan['start_pos']
         finishPos = Config.scan['finish_pos']
         scanRes = Config.scan['scan_res']
@@ -631,16 +668,16 @@ class SimGUI:
         xScan = [startPos[0]+(xStep*index) for index in list(range(lenX+1))]
         yScan = [startPos[1]+(yStep*index) for index in list(range(lenY+1))]
 
-        print('xScan:', self.xScan)
-        print('yScan:', self.yScan)
+        print('xScan:', xScan)
+        print('yScan:', yScan)
 
         if len(xScan) == 0 or len(yScan) == 0:
             print('resolution error - please enter appropriate resolution for image size')
 
         self.posDict = {}
         self.mapList = []
-        for j in self.yScan:
-            for i in self.xScan:
+        for j in yScan:
+            for i in xScan:
                 pos = (i, j)
                 self.mapList.append(pos)
                 self.posDict['{},{}'.format(i, j)] = (pos)
@@ -763,6 +800,7 @@ class SimGUI:
         return
 
     def parse_input(self):
+        '''Parses the input from the command line and returns the command and arguments as a tuple'''
         inp = self.values['COMIN']
         try:  # searches for spaces in command
             command = inp[:inp.index(' ')]
