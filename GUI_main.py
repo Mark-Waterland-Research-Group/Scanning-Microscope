@@ -229,6 +229,7 @@ class SimGUI:
         if self.track_z:
             Config.instrument['current_position'][2] -= self.focus_step
         print('NOCOM: Focusing down {}'.format(self.focus_step))
+
         # send gcode for focus down
 
     def focus_osc(self):
@@ -833,11 +834,15 @@ class SimGUI:
             self.refresh_window()
 
 
+
 if __name__ == "__main__":
     Config = MetaFile()
     Win = SimGUI(Config)
 
     print(Config.__dict__)
+    print(Win.startPos)
+
+
     Win.main_loop()
     '''
     # NEED TO GO THROUGH AND CHANGE ALL THE VARIABLES IN MAINLOOP
