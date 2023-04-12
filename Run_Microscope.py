@@ -164,6 +164,8 @@ def prep_linescan(start, finish, increment):
     posHome = start
     posFinish
 
+'''COMMAND PARSING'''
+
 def get_command(commandList):
     while True:
         command = str(input("Enter command:\n"))
