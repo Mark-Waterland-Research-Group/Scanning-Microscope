@@ -45,6 +45,7 @@ def open_serial_port(baudrate=115200):
 
     def move_absolute(self, currentPos, newPos):
         # send_gcode('G90')
+        # refactor this function to send move commands for each axis separately, only if that position is different from the current position
         if isinstance(newPos, tuple):
             xPos, yPos = newPos
             if currentPos[0] != xPos and currentPos[1] != yPos:

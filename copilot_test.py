@@ -1,21 +1,18 @@
-import PySimpleGUI
+# q: write me a helloworld program
+# a: print("Hello World")   
 
-# create a GUI with three blocks
+# a program that uses matplotlib to plot a sine wave
 
-layout = [[PySimpleGUI.Text('Block 1')],
-            [PySimpleGUI.Text('Block 2')],
-            [PySimpleGUI.Text('Block 3')]]
+import matplotlib.pyplot as plt
+import numpy as np
 
-window = PySimpleGUI.Window('My new window').Layout(layout)
+x = np.arange(0, 2*np.pi, 0.1)
+y = np.sin(x)
 
-# create a loop to keep the GUI open
+plt.plot(x, y)
+# turn off the axes
+plt.axis('off')
 
-while True:
-    event, values = window.Read()
-    if event is None:
-        break
 
-# close the GUI
-
-window.Close()
+plt.show()
 
