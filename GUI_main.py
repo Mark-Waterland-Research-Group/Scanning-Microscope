@@ -11,8 +11,6 @@ from tkinter import ttk
 def pause(text='---'):
     input(text)
 
-# BUG: displaying all three axes in the STARTPOS and FINISHPOS text, caused the array calculations to fail/not register
-# FEAT: change set home to match changes to origin position
 
 class Linescan:
 
@@ -843,7 +841,7 @@ if __name__ == "__main__":
     # NEED TO GO THROUGH AND CHANGE ALL THE VARIABLES IN MAINLOOP
     '''
     # print(win.__dict__)
-
+    
     # root = tk.Tk()
     # app = TK_GUI(root)
     # root.mainloop()
