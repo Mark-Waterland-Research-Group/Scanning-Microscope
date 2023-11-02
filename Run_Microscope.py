@@ -719,7 +719,7 @@ while True:
 
 inp = input("Change directory and run tests, then press <Enter> to continue")
 
-s, currentPos, commandDict, commandList = initializeGRBL(motorSpeed, comPort)
+# s, currentPos, commandDict, commandList = initializeGRBL(motorSpeed, comPort)
 
 
 while True:
