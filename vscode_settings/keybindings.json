@@ -1,0 +1,64 @@
+// Place your key bindings in this file to override the defaults
+// Python: Run Python File in Terminal
+[{
+    "key": "alt+'",
+    "command": "python.execInTerminal",
+    "when": "editorTextFocus"
+},
+{
+    "key": "ctrl+shift+d",
+    "command": "-workbench.view.debug",
+    "when": "viewContainer.workbench.view.debug.enabled"
+},
+{
+    "key": "ctrl+shift+d",
+    "command": "editor.action.duplicateSelection"
+},
+{
+    "key": "alt+/",
+    "command": "terminal.focus"
+},
+{
+    "key": "ctrl+w",
+    "command": "-workbench.action.closeActiveEditor"
+},
+{
+    "key": "alt+,",
+    "command": "workbench.action.focusFirstEditorGroup"
+},
+{
+    "key": "ctrl+1",
+    "command": "-workbench.action.focusFirstEditorGroup"
+},
+{
+    "key": "alt+.",
+    "command": "workbench.action.terminal.toggleTerminal",
+    "when": "terminal.active"
+},
+{
+    "key": "alt+;",
+    "command": "workbench.action.terminal.killAll"
+},
+{
+    "key": "ctrl+;",
+    "command": "python.createTerminal"
+},
+{
+    "key": "ctrl+'",
+    "command": "python.execInTerminal-icon"
+},
+{
+    "key": "shift+alt+'",
+    "command": "python.debugInTerminal"
+},
+{
+    "key": "ctrl+shift+/",
+    "command": "editor.action.blockComment",
+    "when": "editorTextFocus && !editorReadonly"
+},
+{
+    "key": "shift+alt+a",
+    "command": "-editor.action.blockComment",
+    "when": "editorTextFocus && !editorReadonly"
+}
+]

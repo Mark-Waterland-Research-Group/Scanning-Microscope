@@ -1,4 +1,4 @@
-import gpib_ctypes
+# import gpib_ctypes
 import pyvisa
 import time
 import serial
@@ -6,11 +6,11 @@ import serial
 # Open a connection to the instrument
 rm = pyvisa.ResourceManager()
 rm.list_resources()
-instrument = rm.open_resource('COM6')  # Replace with the actual VISA address of your instrument
-# s = serial.Serial(port='GPIB0::1::INSTR', timeout=5000)
+instrument = rm.open_resource('COM12')  # Replace with the actual VISA address of your instrument
+# s = serial.Serial(port='COM12', timeout=5000)
 
 # breakpoint()
-
+breakpoint()
 # breakpoint()
 
 # Send the ASCII character to the instrument
@@ -81,3 +81,34 @@ except pyvisa .VisaIOError as e:
 
 # Close the instrument connection
 instrument.close()
+
+# import serial
+# import time
+
+# # Replace 'COM3' with the correct port name on your computer.
+# # The baudrate should be set to the value specified by your spectrometer's manual.
+# ser = serial.Serial('COM12', baudrate=19200, bytesize=8, parity='N', stopbits=1, timeout=1)
+# ser.flushInput()
+# ser.flushOutput()
+
+# ser.write(' \r'.encode())
+# initial = ser.read(ser.inWaiting())
+# print('initial:', initial.decode())
+
+# # Function to send commands to the spectrometer
+# def send_command(command):
+#     command = command + '\r'  # Add a carriage return to the end of the command
+#     ser.write(command.encode())
+#     time.sleep(0.01)  # Wait for the command to be sent
+#     breakpoint()
+#     response = ser.read(ser.inWaiting())  # Read the response
+#     return response.decode()
+
+# # Example command, replace with actual commands for your spectrometer
+# while True:
+#     command = input('Enter command:')
+#     response = send_command('YOUR_COMMAND_HERE')
+#     print(response)
+
+# # Close the serial connection
+# ser.close()
