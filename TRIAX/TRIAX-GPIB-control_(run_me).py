@@ -1,7 +1,7 @@
-import gpib_ctypes
+# import gpib_ctypes
 import pyvisa
 import time
-import serial
+# import serial
 
 # Open a connection to the instrument
 rm = pyvisa.ResourceManager()
@@ -16,12 +16,30 @@ def connect(instrument):
     time.sleep(0.0001)
     state = instrument.read()
     print(state)
-    breakpoint()
+    # breakpoint()
     return state
 
 
 state = connect(instrument)
-breakpoint()
+'''# looking for some kind of response like "b" or "o". Use command "O2000" to enter into command mode.
+Initial grating is Blaze 500, 1200 g/mm
+centre for 532 nm is roughly 241543
+List of useful commands = {
+"Initiate command mode": "02000",
+"Initialise Spectrometer: "A",
+"read motor position": "H0",
+"read slit position: "j0,0",
+"move slit relative: "k0,0,100"
+"poll motors after move command sent - necessary because control is given to PC immediately after command is given, but new motor command cannot be issued until motor motion is stopped. Implement a check for this here. Note if the motors are not busy, a timeout is received... could be a delay/timing issue: "E",
+"move exit mirror to front exit (out of path): "f0".
+"move exit mirror to side exit (in path): "e0",
+"entrance mirror to front enterance: "c0",
+"entrance mirror to side enterance: "d0"
+
+
+
+'''
+# breakpoint()
 # iniz= input('To begin initialization, enter "A", else continue')
 
 # if iniz == 'A':
@@ -43,6 +61,7 @@ breakpoint()
 
 while True:
     try:
+        # loop continuously here for com input
         com = input('Enter command - c to continue:\n')
         if com == 'c':
             break
